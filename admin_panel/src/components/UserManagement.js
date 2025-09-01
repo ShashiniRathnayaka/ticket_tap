@@ -28,11 +28,11 @@ import {
 import {
   Refresh as RefreshIcon,
   Check as CheckIcon,
-  Block as BlockIcon,
+  // Block as BlockIcon,
   Delete as DeleteIcon,
   PlayArrow as ActivateIcon,
   Pause as SuspendIcon,
-  Close as CloseIcon
+  // Close as CloseIcon
 } from '@mui/icons-material';
 
 const UserManagement = () => {
