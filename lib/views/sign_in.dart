@@ -72,7 +72,6 @@ class _SignInState extends State<SignIn> {
                         child: TabBarView(
                           children: [
                             buildSignInTab(),
-                            // buildSignUpTab(), // Placeholder for Sign Up
                             SignUp()
                           ],
                         ),
