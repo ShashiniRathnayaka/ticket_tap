@@ -1,0 +1,107 @@
+/* Layout wrapper takes full screen */
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.header {
+  height: 60px;
+  background: #4E1A93;
+  color: white;
+  display: flex;
+  align-items: center;   /* keep vertically centered */
+  justify-content: flex-start;  /* 👈 put items left like before */
+  padding: 0 20px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/* Main area splits sidebar + content */
+.main-content {
+  display: flex;
+  flex: 1;
+  margin: 0;   /* remove unwanted gap */
+  padding: 0;  /* remove unwanted gap */
+  height: calc(100vh - 60px); /* fill space under header */
+  overflow: hidden;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between; /* space between left and right */
+  align-items: center;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-role {
+  background-color: #3498db;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background-color: #c0392b;
+}
+
+.dashboard {
+  padding: 1rem;
+}
+
+.dashboard h1 {
+  color: #4E1A93;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.card h3 {
+  color: #4E1A93;
+  margin-top: 0;
+}
+
+.card p {
+  color: #7f8c8d;
+}
