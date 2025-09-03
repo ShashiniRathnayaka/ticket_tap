@@ -5,6 +5,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
+const busesRoutes = require('./routes/buses');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(express.json()); // for parsing application/json
 // Routes
 app.use('/auth', authRoutes); // Add the authentication routes here
 app.use('/users', usersRoutes);
+app.use('/buses', busesRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
