@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import UserManagement from './UserManagement';
-import './Dashboard.css';
+import '../Dashboard.css';
 
 const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');

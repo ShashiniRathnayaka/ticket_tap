@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import DriveManagement from './Admin/DriverManagement';
-import RouteManagement from './Admin/RouteManagement';
-import BusManagement from './Admin/BusManagement';
-import './Dashboard.css';
+import DriveManagement from './DriverManagement';
+import RouteManagement from './RouteManagement';
+import BusManagement from './BusManagement';
+import '../Dashboard.css';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');

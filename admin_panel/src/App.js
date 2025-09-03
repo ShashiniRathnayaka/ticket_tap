@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AdminLogin from './components/AdminLogin';
 import AdminSignup from './components/AdminSignup';
-import SuperAdminDashboard from './components/SuperAdminDashboard';
-import AdminDashboard from './components/AdminDashboard';
+import SuperAdminDashboard from './components/SuperAdmin/SuperAdminDashboard';
+import AdminDashboard from './components/Admin/AdminDashboard';
 import Layout from './components/Layout';
 
 // Protected Route Component with Layout
