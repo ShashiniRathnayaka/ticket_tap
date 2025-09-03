@@ -4,11 +4,12 @@
   height: 100%;
   margin: 0;
   padding: 0;
+  min-height: calc(100vh - 60px);
 }
 
 /* Sidebar flush with header */
 .sidebar {
-  width: 220px;
+  width: 250px;
   background: #4E1A93;
   color: #fff;
   display: flex;
@@ -16,6 +17,7 @@
   padding: 15px;
   margin: 0;
   height: 100%; /* fill screen */
+  gap: 10px;
 }
 
 /* Main content fills rest */

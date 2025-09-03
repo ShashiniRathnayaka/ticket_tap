@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AdminLogin from './components/AdminLogin';
 import AdminSignup from './components/AdminSignup';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
+import AdminDashboard from './components/AdminDashboard';
 import Layout from './components/Layout';
 
 // Protected Route Component with Layout
@@ -12,40 +13,37 @@ const ProtectedRoute = ({ children }) => {
   return user ? <Layout>{children}</Layout> : <Redirect to="/login" />;
 };
 
-// Admin type checking component
-const AdminRouter = () => {
-  const { user } = useAuth();
-  
-  if (user && user.role === 'SUPERADMIN') {
-    return <SuperAdminDashboard />;
-  } else if (user) {
-    // This should not happen as regular admins are blocked at login
-    return <div>Access denied. Only super administrators are allowed.</div>;
-  } else {
-    return <Redirect to="/login" />;
-  }
-};
-
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Switch>
+          {/* Auth routes */}
           <Route path="/login" component={AdminLogin} />
           <Route path="/signup" component={AdminSignup} />
-          <Route 
-            path="/dashboard" 
+
+          {/* SuperAdmin Dashboard */}
+          <Route
+            path="/super-admin-dashboard"
             render={() => (
               <ProtectedRoute>
-                <AdminRouter />
+                <SuperAdminDashboard />
               </ProtectedRoute>
-            )} 
+            )}
           />
-          <Route 
-            exact 
-            path="/" 
-            render={() => <Redirect to="/dashboard" />} 
+
+          {/* Admin Dashboard */}
+          <Route
+            path="/admin-dashboard"
+            render={() => (
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            )}
           />
+
+          {/* Default redirect */}
+          <Route exact path="/" render={() => <Redirect to="/login" />} />
         </Switch>
       </Router>
     </AuthProvider>

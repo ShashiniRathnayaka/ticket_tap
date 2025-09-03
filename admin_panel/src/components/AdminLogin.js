@@ -47,8 +47,11 @@ const AdminLogin = () => {
       login(userData);
       
       // Redirect based on role
+      // Redirect based on role
       if (userData.role === 'SUPERADMIN') {
-        history.push('/dashboard');
+        history.push('/super-admin-dashboard');
+      } else if (userData.role === 'ADMIN') {
+        history.push('/admin-dashboard');
       } else {
         setError('Access denied. Only administrators are allowed.');
         localStorage.removeItem('token');
