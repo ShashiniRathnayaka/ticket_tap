@@ -197,39 +197,6 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.addDriver = async (req, res) => {
-  const { name, email, password } = req.body;
-
-  // Check role
-  if (req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
-    return res.status(403).json({ message: 'Unauthorized' });
-  }
-
-  try {
-    // Check if email already exists
-    const emailCheck = await client.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (emailCheck.rows.length > 0) {
-      return res.status(409).json({ message: 'Email is already registered' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await client.query(
-      `INSERT INTO users (name, email, password_hash, role, status) 
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, status`,
-      [name, email, hashedPassword, 'DRIVER', 'ACTIVE']
-    );
-
-    res.status(201).json({
-      message: 'Driver added successfully',
-      driver: result.rows[0]
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error adding driver' });
-  }
-};
-
 exports.authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // "Bearer <token>"

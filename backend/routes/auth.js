@@ -173,6 +173,5 @@ const authController = require('../controllers/authController');
 router.post('/admin-signup', authController.adminSignup);
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
-router.post('/add-driver', authController.authenticateToken, authController.addDriver);
 
 module.exports = router;
