@@ -1,4 +1,4 @@
-const { client } = require('../db');
+const client = require('../db');
 
 // Add new schedule
 exports.addSchedule = async (req, res) => {
