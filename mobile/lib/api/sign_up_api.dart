@@ -2,9 +2,14 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:ticket_tap/api/saveto_storage.dart';
-import 'package:ticket_tap/constants/api_constants.dart';
+import 'package:ticket_tap/services/secure_storage_services.dart';
 
-Future<dynamic> signUp(String name, String email, String password, String role,) async {
+Future<dynamic> signUp(
+  String name,
+  String email,
+  String password,
+  String role,
+) async {
   final dio = Dio();
 
   try {
@@ -16,11 +21,7 @@ Future<dynamic> signUp(String name, String email, String password, String role,)
         'password': password,
         'role': role,
       }),
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      ),
+      options: Options(headers: {'Content-Type': 'application/json'}),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -32,21 +33,31 @@ Future<dynamic> signUp(String name, String email, String password, String role,)
         response.data['user']['email'],
         response.data['user']['role'],
       );
+      await SecureStorageService.saveUserData(
+        userId: response.data['user']['id']?.toString() ?? '',
+        email: response.data['user']['email'],
+        name: response.data['user']['name'] ?? '',
+        role: response.data['user']['role'] ?? '',
+        authToken: response.data['token'] ?? '',
+        refreshToken: response.data['refreshToken'] ?? '',
+      );
       return response.data;
     } else if (response.statusCode == 409) {
       final data = response.data;
-      print("Conflict: ${data['message']}"); // This will be 'Email is already registered'
+      print(
+        "Conflict: ${data['message']}",
+      ); // This will be 'Email is already registered'
       return data['message'];
-    }else {
+    } else {
       print('Failed create user: ${response.statusCode}');
     }
   } catch (e) {
     if (e is DioException) {
-    print('Dio error: ${e.response?.statusCode} ${e.response?.data}');
-    return e.response?.data?['message'] ?? 'An unexpected error occurred';
-  } else {
-    print('Error creating user: $e');
-    return 'An unexpected error occurred';
-  }
+      print('Dio error: ${e.response?.statusCode} ${e.response?.data}');
+      return e.response?.data?['message'] ?? 'An unexpected error occurred';
+    } else {
+      print('Error creating user: $e');
+      return 'An unexpected error occurred';
+    }
   }
 }

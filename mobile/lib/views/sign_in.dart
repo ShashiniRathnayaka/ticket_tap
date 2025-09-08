@@ -1,6 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:ticket_tap/themes/AppColors.dart';
 import 'package:ticket_tap/themes/gradient_background.dart';
+import 'package:ticket_tap/views/driver%20screens/d_homeScreen.dart';
+import 'package:ticket_tap/views/passenger%20screens/p_homeScreen.dart';
 import 'package:ticket_tap/views/sign_up.dart';
 
 class SignIn extends StatefulWidget {
@@ -14,6 +20,7 @@ class _SignInState extends State<SignIn> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -60,20 +67,15 @@ class _SignInState extends State<SignIn> {
                           unselectedLabelColor: Colors.grey,
                           indicatorColor: AppColors.primaryColor,
                           indicatorWeight: 3,
-                          tabs: [
-                            Tab(text: "Sign In"),
-                            Tab(text: "Sign Up"),
-                          ],
+                          tabs: [Tab(text: "Sign In"), Tab(text: "Sign Up")],
                         ),
                       ),
                       SizedBox(height: 20),
                       SizedBox(
-                        height: screenHeight * 0.4, // Fixed height for tab views
+                        height:
+                            screenHeight * 0.4, // Fixed height for tab views
                         child: TabBarView(
-                          children: [
-                            buildSignInTab(),
-                            SignUp()
-                          ],
+                          children: [buildSignInTab(), SignUp()],
                         ),
                       ),
                     ],
@@ -98,9 +100,7 @@ class _SignInState extends State<SignIn> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Please enter your email and password to sign in.",
-            ),
+            Text("Please enter your email and password to sign in."),
             SizedBox(height: 15),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -148,10 +148,95 @@ class _SignInState extends State<SignIn> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
+              onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  print('Email: ${emailController.text}');
-                  print('Password: ${passwordController.text}');
+                  // Show loading indicator
+                  setState(() {
+                    _isLoading = true;
+                  });
+
+                  try {
+                    // Call login API
+                    final response = await http.post(
+                      Uri.parse('http://192.168.8.117:5000/auth/login'),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'email': emailController.text,
+                        'password': passwordController.text,
+                      }),
+                    );
+
+                    // Parse the response
+                    final responseData = jsonDecode(response.body);
+                    // final storageService = SecureStorageService();
+
+                    if (response.statusCode == 200) {
+                      // Login successful
+                      print('Login successful!');
+                      print('User: ${responseData['user']}');
+                      print('Token: ${responseData['token']}');
+
+                      // Save user data to secure storage
+                      await SecureStorageService.saveUserData(
+                        userId: responseData['user']['id']?.toString() ?? '',
+                        email:
+                            responseData['user']['email'] ??
+                            emailController.text,
+                        name: responseData['user']['name'] ?? '',
+                        role: responseData['user']['role'] ?? '',
+                        authToken: responseData['token'] ?? '',
+                        refreshToken: responseData['refreshToken'] ?? '',
+                      );
+
+                      // Navigate based on user role
+                      final userRole =
+                          responseData['user']['role']?.toUpperCase();
+
+                      if (userRole == 'DRIVER') {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DHomescreen(),
+                          ),
+                        );
+                      } else if (userRole == 'PASSENGER') {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PHomescreen(),
+                          ),
+                        );
+                      } else {
+                        // Show error for unknown role
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('No access rights or permissions'),
+                          ),
+                        );
+                      }
+                    } else {
+                      // Login failed
+                      print('Login failed: ${responseData['message']}');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            responseData['message'] ?? 'Login failed',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    // Handle errors
+                    print('Login error: $e');
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+                  } finally {
+                    // Hide loading indicator
+                    setState(() {
+                      _isLoading = false;
+                    });
+                  }
                 }
               },
               child: Text('Sign in', style: TextStyle(fontSize: 16)),
