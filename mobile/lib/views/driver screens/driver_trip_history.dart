@@ -11,6 +11,11 @@ class DriverTripHistoryScreen extends StatelessWidget {
       endTime: '09:30 AM',
       date: 'Oct 15, 2023',
       status: 'Completed',
+      startLocation: 'Main St & 1st Ave',
+      endLocation: 'Central Park',
+      distance: "100km",
+      busType: 'luxury',
+      licensePlate: 'abc123'
     ),
     DriverTrip(
       id: '102',
@@ -20,6 +25,11 @@ class DriverTripHistoryScreen extends StatelessWidget {
       endTime: '03:45 PM',
       date: 'Oct 14, 2023',
       status: 'Completed',
+      startLocation: 'Main St & 1st Ave',
+      endLocation: 'Central Park',
+      distance: "100km",
+      busType: 'luxury',
+      licensePlate: 'abc123'
     ),
     DriverTrip(
       id: '103',
@@ -29,6 +39,11 @@ class DriverTripHistoryScreen extends StatelessWidget {
       endTime: '11:30 AM',
       date: 'Oct 13, 2023',
       status: 'Completed',
+      startLocation: 'Main St & 1st Ave',
+      endLocation: 'Central Park',
+      distance: "100km",
+      busType: 'luxury',
+      licensePlate: 'abc123'
     ),
     DriverTrip(
       id: '104',
@@ -38,6 +53,11 @@ class DriverTripHistoryScreen extends StatelessWidget {
       endTime: '05:30 PM',
       date: 'Oct 12, 2023',
       status: 'Cancelled',
+      startLocation: 'Main St & 1st Ave',
+      endLocation: 'Central Park',
+      distance: "100km",
+      busType: 'luxury',
+      licensePlate: 'abc123'
     ),
   ];
 
@@ -47,6 +67,7 @@ class DriverTripHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Trip History'),
       ),
       body: Padding(

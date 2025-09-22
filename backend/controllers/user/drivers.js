@@ -1,48 +1,4 @@
 const client = require('../../db');
-// const authenticateToken = require('../middleware/auth');
-
-// const router = express.Router();
-
-// // Get driver's assigned schedules
-// router.get('/:driverId/schedules', authenticateToken, async (req, res) => {
-//   try {
-//     const { driverId } = req.params;
-    
-//     const query = `
-//       SELECT 
-//         s.id,
-//         s.departure_time,
-//         s.arrival_time,
-//         s.day_of_week,
-//         s.status,
-//         r.route_number,
-//         r.start_location,
-//         r.end_location,
-//         b.bus_number,
-//         b.capacity,
-//         u.name as driver_name
-//       FROM schedules s
-//       INNER JOIN routes r ON s.route_id = r.id
-//       INNER JOIN buses b ON s.bus_id = b.id
-//       INNER JOIN users u ON s.driver_id = u.id
-//       WHERE s.driver_id = $1 AND s.status = 'ACTIVE'
-//       ORDER BY s.departure_time
-//     `;
-    
-//     const result = await pool.query(query, [driverId]);
-    
-//     res.json({
-//       success: true,
-//       schedules: result.rows
-//     });
-//   } catch (error) {
-//     console.error('Error fetching driver schedules:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error fetching schedules'
-//     });
-//   }
-// });
 
 const getDriversSchedule = async (req, res) => {
   try {

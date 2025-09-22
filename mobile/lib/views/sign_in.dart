@@ -184,7 +184,7 @@ class _SignInState extends State<SignIn> {
                             emailController.text,
                         name: responseData['user']['name'] ?? '',
                         role: responseData['user']['role'] ?? '',
-                        authToken: responseData['token'] ?? '',
+                        authToken: responseData['accessToken'] ?? '',
                         refreshToken: responseData['refreshToken'] ?? '',
                       );
 
