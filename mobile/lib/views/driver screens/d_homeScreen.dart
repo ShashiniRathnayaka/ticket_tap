@@ -416,7 +416,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   child: ListView.builder(
                     itemCount: upcomingTrips.length,
                     itemBuilder: (context, index) {
-                      return TripCard(trip: upcomingTrips[index]);
+                      return TripCard(trip: upcomingTrips[index], authToken: accessToken);
                     },
                   ),
                 ),
@@ -498,8 +498,9 @@ class DriverTrip {
 // Trip Card Widget
 class TripCard extends StatelessWidget {
   final DriverTrip trip;
+  final String authToken;
 
-  const TripCard({super.key, required this.trip});
+  const TripCard({super.key, required this.trip, required this.authToken});
 
   @override
   Widget build(BuildContext context) {
@@ -624,7 +625,7 @@ class TripCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DriverTripDetailScreen(trip: trip),
+                        builder: (context) => DriverTripDetailScreen(trip: trip,  authToken: authToken),
                       ),
                     );
                   },

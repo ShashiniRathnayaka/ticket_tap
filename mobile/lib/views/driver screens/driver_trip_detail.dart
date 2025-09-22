@@ -7,8 +7,9 @@ import 'dart:convert';
 
 class DriverTripDetailScreen extends StatefulWidget {
   final DriverTrip trip;
+  final String authToken;
 
-  const DriverTripDetailScreen({super.key, required this.trip});
+  const DriverTripDetailScreen({super.key, required this.trip, required this.authToken});
 
   @override
   State<DriverTripDetailScreen> createState() => _DriverTripDetailScreenState();
@@ -39,15 +40,15 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
       final token = userData['authToken'];
       final response = await http.post(
-        Uri.parse('http://192.168.8.117:5000/trips/start'),
+        Uri.parse('http://192.168.8.117:5000/drivers/start/${userData['userId']}/${widget.trip.id}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode({
-          'schedule_id': widget.trip.id,
-          'start_time': DateTime.now().toIso8601String(),
-        }),
+        // body: json.encode({
+        //   'schedule_id': widget.trip.id,
+        //   'start_time': DateTime.now().toIso8601String(),
+        // }),
       );
 
       if (response.statusCode == 200) {
@@ -67,15 +68,15 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
 
       final token = userData['authToken'];
       final response = await http.post(
-        Uri.parse('http://192.168.8.117:5000/trips/end'),
+        Uri.parse('http://192.168.8.117:5000/drivers/end/${userData['userId']}/${widget.trip.id}'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer ${widget.authToken}',
         },
-        body: json.encode({
-          'schedule_id': widget.trip.id,
-          'end_time': DateTime.now().toIso8601String(),
-        }),
+        // body: json.encode({
+        //   'schedule_id': widget.trip.id,
+        //   'end_time': DateTime.now().toIso8601String(),
+        // }),
       );
 
       if (response.statusCode == 200) {
@@ -294,13 +295,6 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
                     Text(
                       'Started at $_startTime',
                       style: const TextStyle(color: Colors.grey),
-                    ),
-                    Text(
-                      'Current time: ${_getCurrentTime()}',
-                      style: TextStyle(
-                        color: Colors.green.shade600,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ],
                 ),
