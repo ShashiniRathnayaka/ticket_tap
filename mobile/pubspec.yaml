@@ -96,3 +96,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  google_mlkit_commons:
+    path: packages/google_mlkit_commons-0.5.0
+  google_mlkit_barcode_scanning:
+    path: packages/google_mlkit_barcode_scanning
+
