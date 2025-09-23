@@ -307,7 +307,7 @@ const getTripHistory = async (req, res) => {
       SELECT t.*, 
              s.departure_time as scheduled_departure,
              s.arrival_time as scheduled_arrival,
-             r.route_number,
+             r.id,
              r.start_location,
              r.end_location,
              b.bus_number,

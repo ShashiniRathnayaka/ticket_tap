@@ -3,7 +3,6 @@ import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:ticket_tap/views/driver%20screens/d_homeScreen.dart';
 import 'package:ticket_tap/views/driver%20screens/driver_qr_generator.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class DriverTripDetailScreen extends StatefulWidget {
   final DriverTrip trip;
