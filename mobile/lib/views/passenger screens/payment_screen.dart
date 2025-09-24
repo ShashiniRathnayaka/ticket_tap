@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:ticket_tap/api/api_services.dart';
 import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,6 +19,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String? _selectedEndLocation;
   double _calculatedFare = 0.0;
   bool _isLoading = true;
+  bool _isProcessingPayment = false;
   List<String> _stops = [];
   
   // New variables for location search
@@ -34,6 +37,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   void initState() {
     super.initState();
     _loadRouteStops();
+    _initializeStripe();
+  }
+
+  Future<void> _initializeStripe() async {
+    // Configure Stripe with your publishable key
+    Stripe.publishableKey = 'pk_test_your_publishable_key_here';
+    // For production, you might want to set this up in main.dart
   }
 
   Future<void> _loadRouteStops() async {
@@ -91,9 +101,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
         
         if (features.isNotEmpty) {
           final geometry = features[0]['geometry'];
+          final coordinates = geometry['coordinates'] as List<dynamic>;
           return {
-            'longitude': geometry['coordinates'][0].toDouble(),
-            'latitude': geometry['coordinates'][1].toDouble(),
+            'longitude': coordinates[0].toDouble(),
+            'latitude': coordinates[1].toDouble(),
           };
         }
       }
@@ -128,9 +139,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final distanceInMeters = data['routes'][0]['summary']['distance'];
-        final distanceInKm = distanceInMeters / 1000;
-        return distanceInKm;
+        final routes = data['routes'] as List<dynamic>;
+        if (routes.isNotEmpty) {
+          final summary = routes[0]['summary'] as Map<String, dynamic>;
+          final distanceInMeters = summary['distance'] as double;
+          final distanceInKm = distanceInMeters / 1000;
+          return distanceInKm;
+        }
       }
     } catch (e) {
       print('Error calculating distance: $e');
@@ -173,6 +188,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   // Fallback calculation based on stops
   void _calculateFareByStops() {
+    if (_selectedStartLocation == null || _selectedEndLocation == null) return;
+    
     final startIndex = _stops.indexOf(_selectedStartLocation!);
     final endIndex = _stops.indexOf(_selectedEndLocation!);
     
@@ -199,6 +216,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
+    setState(() {
+      _isProcessingPayment = true;
+    });
+
     try {
       final userData = await SecureStorageService.getUserData();
       if (userData == null) {
@@ -211,19 +232,68 @@ class _PaymentScreenState extends State<PaymentScreen> {
         return;
       }
 
-      // Simulate payment processing
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Processing payment...'),
-          backgroundColor: Colors.blue,
+      // 1. Call backend to create payment intent
+      final paymentResponse = await ApiService.createPaymentIntent({
+        'amount': (_calculatedFare * 100).round(), // Convert to cents
+        'currency': 'lkr',
+        'userId': userData['userId'],
+        'ticketDetails': {
+          'startLocation': _selectedStartLocation,
+          'endLocation': _selectedEndLocation,
+          'routeId': widget.qrData['route_id'] ?? 'unknown',
+          'busNumber': widget.qrData['bus_number'] ?? 'unknown',
+          'distance': await _calculateDistance(_selectedStartLocation!, _selectedEndLocation!),
+          'scheduledTime': widget.qrData['scheduled_time'] ?? 'unknown',
+          'fare': _calculatedFare,
+        }
+      });
+
+      await Stripe.instance.applySettings();
+
+      // 2. Get the client secret from backend response
+      final String clientSecret = paymentResponse['clientSecret'];
+      final String paymentIntentId = paymentResponse['paymentIntentId'];
+
+      // 3. Initialize the payment sheet with the client secret
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'TicketTap',
+          // style: ThemeMode.light,
+          // Remove customerId and ephemeralKey if your backend doesn't provide them
         ),
       );
 
-      await Future.delayed(const Duration(seconds: 2));
+      // 4. Display the payment sheet
+      await Stripe.instance.presentPaymentSheet();
 
-      // Show success dialog
-      _showPaymentSuccessDialog();
-      
+      // 5. If we reach here, payment was successful - confirm with backend
+      final result = await ApiService.confirmPayment({
+        'paymentIntentId': paymentIntentId,
+        'ticketDetails': {
+          'startLocation': _selectedStartLocation,
+          'endLocation': _selectedEndLocation,
+          'routeId': widget.qrData['route_id'] ?? 'unknown',
+          'busNumber': widget.qrData['bus_number'] ?? 'unknown',
+          'fare': _calculatedFare,
+          'userId': userData['id'],
+        }
+      });
+
+      if (result['success']) {
+        _showPaymentSuccessDialog(result['ticket']);
+      } else {
+        throw Exception('Payment confirmation failed');
+      }
+
+    } on StripeException catch (e) {
+      // Handle Stripe-specific errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment failed: ${e.error.localizedMessage}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -231,10 +301,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() {
+        _isProcessingPayment = false;
+      });
     }
   }
 
-  void _showPaymentSuccessDialog() {
+  void _showPaymentSuccessDialog(Map<String, dynamic> ticket) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -252,6 +326,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Text('Amount: LKR ${_calculatedFare.toStringAsFixed(2)}'),
               const SizedBox(height: 10),
               Text('Ticket: ${_selectedStartLocation} → ${_selectedEndLocation}'),
+              const SizedBox(height: 10),
+              Text('Ticket ID: ${ticket['id']}'),
               const SizedBox(height: 20),
               const Text(
                 'Your digital ticket has been generated. Show it to the driver when boarding.',
@@ -298,217 +374,231 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Trip Information Card
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.2)),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Trip Details',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF4E1A93),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildInfoRow('Route', widget.qrData['route'] ?? 'Unknown'),
-                          _buildInfoRow('Bus', widget.qrData['bus_number'] ?? 'Unknown'),
-                          _buildInfoRow('Time', widget.qrData['scheduled_time'] ?? 'Unknown'),
-                        ],
-                      ),
-                    ),
-                  ),
-
+                  _buildTripInfoCard(),
                   const SizedBox(height: 24),
-
-                  // Location Selection
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.2)),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Select Your Journey',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF4E1A93),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Start Location Search
-                          _buildLocationSearchField(
-                            'Start Location',
-                            _startLocationController,
-                            _startLocationSuggestions,
-                            _isSearchingStart,
-                            (value) {
-                              setState(() {
-                                _selectedStartLocation = value;
-                                _startLocationController.text = value;
-                                _startLocationSuggestions = [];
-                                _isSearchingStart = false;
-                                _selectedEndLocation = null;
-                                _endLocationController.clear();
-                                _calculateFare();
-                              });
-                            },
-                            (query) async {
-                              setState(() {
-                                _isSearchingStart = true;
-                              });
-                              
-                              final suggestions = await _getLocationSuggestions(query);
-                              setState(() {
-                                _startLocationSuggestions = suggestions;
-                                _isSearchingStart = false;
-                              });
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // End Location Search
-                          _buildLocationSearchField(
-                            'End Location',
-                            _endLocationController,
-                            _endLocationSuggestions,
-                            _isSearchingEnd,
-                            (value) {
-                              setState(() {
-                                _selectedEndLocation = value;
-                                _endLocationController.text = value;
-                                _endLocationSuggestions = [];
-                                _isSearchingEnd = false;
-                                _calculateFare();
-                              });
-                            },
-                            (query) async {
-                              setState(() {
-                                _isSearchingEnd = true;
-                              });
-                              
-                              final suggestions = await _getLocationSuggestions(query);
-                              setState(() {
-                                _endLocationSuggestions = suggestions;
-                                _isSearchingEnd = false;
-                              });
-                            },
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Fare Calculation
-                          if (_calculatedFare > 0)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.green),
-                              ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Total Fare:',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        'LKR ${_calculatedFare.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (_selectedStartLocation != null && _selectedEndLocation != null)
-                                    FutureBuilder<double?>(
-                                      future: _calculateDistance(_selectedStartLocation!, _selectedEndLocation!),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return const Text(
-                                            'Calculating distance...',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                                          );
-                                        }
-                                        if (snapshot.hasData) {
-                                          return Text(
-                                            'Distance: ${snapshot.data!.toStringAsFixed(2)} km',
-                                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                          );
-                                        }
-                                        return const Text(
-                                          'Distance: Unknown',
-                                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                                        );
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-
+                  // Location Selection Card
+                  _buildLocationSelectionCard(),
                   const SizedBox(height: 30),
-
                   // Payment Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _processPayment,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4E1A93),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Pay Now',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildPaymentButton(),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildTripInfoCard() {
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.2)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Trip Details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4E1A93),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow('Route', widget.qrData['route'] ?? 'Unknown'),
+            _buildInfoRow('Bus', widget.qrData['bus_number'] ?? 'Unknown'),
+            _buildInfoRow('Time', widget.qrData['scheduled_time'] ?? 'Unknown'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationSelectionCard() {
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.2)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Your Journey',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4E1A93),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Start Location Search
+            _buildLocationSearchField(
+              'Start Location',
+              _startLocationController,
+              _startLocationSuggestions,
+              _isSearchingStart,
+              (String value) {
+                setState(() {
+                  _selectedStartLocation = value;
+                  _startLocationController.text = value;
+                  _startLocationSuggestions = [];
+                  _isSearchingStart = false;
+                  _selectedEndLocation = null;
+                  _endLocationController.clear();
+                  _calculatedFare = 0.0; // Reset fare
+                });
+                _calculateFare();
+              },
+              (String query) async {
+                setState(() {
+                  _isSearchingStart = true;
+                });
+                
+                final suggestions = await _getLocationSuggestions(query);
+                setState(() {
+                  _startLocationSuggestions = suggestions;
+                  _isSearchingStart = false;
+                });
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // End Location Search
+            _buildLocationSearchField(
+              'End Location',
+              _endLocationController,
+              _endLocationSuggestions,
+              _isSearchingEnd,
+              (String value) {
+                setState(() {
+                  _selectedEndLocation = value;
+                  _endLocationController.text = value;
+                  _endLocationSuggestions = [];
+                  _isSearchingEnd = false;
+                });
+                _calculateFare();
+              },
+              (String query) async {
+                setState(() {
+                  _isSearchingEnd = true;
+                });
+                
+                final suggestions = await _getLocationSuggestions(query);
+                setState(() {
+                  _endLocationSuggestions = suggestions;
+                  _isSearchingEnd = false;
+                });
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // Fare Calculation
+            if (_calculatedFare > 0)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total Fare:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          'LKR ${_calculatedFare.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_selectedStartLocation != null && _selectedEndLocation != null)
+                      FutureBuilder<double?>(
+                        future: _calculateDistance(_selectedStartLocation!, _selectedEndLocation!),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Text(
+                              'Calculating distance...',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            );
+                          }
+                          if (snapshot.hasData) {
+                            return Text(
+                              'Distance: ${snapshot.data!.toStringAsFixed(2)} km',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            );
+                          }
+                          return const Text(
+                            'Distance: Unknown',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isProcessingPayment ? null : _processPayment,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4E1A93),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _isProcessingPayment
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Pay Now',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
     );
   }
 

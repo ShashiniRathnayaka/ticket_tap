@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ticket_tap/api/api_service.dart';
+import 'package:ticket_tap/api/auth_api_service.dart';
 
 class AuthService {
   static Future<void> logout(BuildContext context) async {
