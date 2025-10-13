@@ -149,6 +149,7 @@ class _SignInState extends State<SignIn> {
                 ),
               ),
               onPressed: () async {
+                FocusScope.of(context).unfocus();
                 if (_formKey.currentState!.validate()) {
                   // Show loading indicator
                   setState(() {

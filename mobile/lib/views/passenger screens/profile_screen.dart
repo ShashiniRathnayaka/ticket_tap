@@ -169,13 +169,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           "Profile",
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF4E1A93),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        // iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),

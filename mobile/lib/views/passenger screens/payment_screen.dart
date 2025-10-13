@@ -5,6 +5,8 @@ import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:ticket_tap/views/passenger%20screens/p_homeScreen.dart';
+
 class PaymentScreen extends StatefulWidget {
   final Map<String, dynamic> qrData;
 
@@ -42,7 +44,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Future<void> _initializeStripe() async {
     // Configure Stripe with your publishable key
-    Stripe.publishableKey = 'pk_test_your_publishable_key_here';
+    Stripe.publishableKey = 'pk_test_51SAQMVKxTYGsGrGJmgbnbDuGmn4PQvX8AHFOUyJP6OyykJc7y9I0wdLKviJpxSbLVXHN1JhhSlX3BVqVpSGkbH5600Kbn4LRne';
     // For production, you might want to set this up in main.dart
   }
 
@@ -206,6 +208,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _processPayment() async {
+    FocusScope.of(context).unfocus();
     if (_selectedStartLocation == null || _selectedEndLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -222,15 +225,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       final userData = await SecureStorageService.getUserData();
-      if (userData == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please login again'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
 
       // 1. Call backend to create payment intent
       final paymentResponse = await ApiService.createPaymentIntent({
@@ -248,7 +242,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         }
       });
 
-      await Stripe.instance.applySettings();
+      // await Stripe.instance.applySettings();
 
       // 2. Get the client secret from backend response
       final String clientSecret = paymentResponse['clientSecret'];
@@ -340,7 +334,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pop(); // Go back to previous screen
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const PHomescreen(initialIndex: 1)),
+                  (route) => false,
+                );
               },
               child: const Text('Done'),
             ),

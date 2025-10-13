@@ -217,6 +217,7 @@ class _SimpleQrScannerState extends State<SimpleQrScanner> {
       return Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           backgroundColor: const Color(0xFF4E1A93),
           title: const Text("QR Scanner", style: TextStyle(color: Colors.white)),
           leading: IconButton(
@@ -260,12 +261,13 @@ class _SimpleQrScannerState extends State<SimpleQrScanner> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFF4E1A93),
         title: const Text("Scan QR Code", style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back, color: Colors.white),
+        //   onPressed: () => Navigator.of(context).pop(),
+        // ),
         actions: [
           IconButton(
             icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off, color: Colors.white),

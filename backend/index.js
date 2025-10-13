@@ -10,6 +10,7 @@ const routesRoutes = require('./routes/routes');
 const schedulesRoutes = require('./routes/schedules');
 const driversRoutes = require('./routes/driverroutes');
 const paymentRoutes= require('./routes/payment');
+const ticketsRouter = require('./routes/tickets');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/routes', routesRoutes);
 app.use('/schedules', schedulesRoutes);
 app.use('/drivers', driversRoutes);
 app.use('/payment', paymentRoutes);
+app.use('/tickets', ticketsRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

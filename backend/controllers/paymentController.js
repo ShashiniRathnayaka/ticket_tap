@@ -35,17 +35,6 @@ const savePaymentToDB = async (paymentData) => {
     }
 };
 
-const getPaymentIdByStripeId = async (stripePaymentIntentId) => {
-    try {
-        const query = 'SELECT id FROM payments WHERE stripe_payment_intent_id = $1';
-        const result = await client.query(query, [stripePaymentIntentId]);
-        return result.rows[0]?.id;
-    } catch (error) {
-        console.error('Error getting payment ID:', error);
-        throw error;
-    }
-};
-
 const updatePaymentStatus = async (stripePaymentIntentId, status) => {
     try {
         const query = 'UPDATE payments SET status = $1, updated_at = NOW() WHERE stripe_payment_intent_id = $2';
@@ -150,54 +139,80 @@ const createPaymentIntent = async (req, res) => {
     }
 };
 
-// 2. Confirm Payment Success
+const getPaymentByStripeId = async (stripePaymentIntentId) => {
+  try {
+    const query = 'SELECT * FROM payments WHERE stripe_payment_intent_id = $1';
+    const result = await client.query(query, [stripePaymentIntentId]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error getting payment by stripe id:', error);
+    throw error;
+  }
+};
+
 const confirmPayment = async (req, res) => {
-    try {
-        const { paymentIntentId, ticketDetails } = req.body;
-        
-        if (!paymentIntentId) {
-            return res.status(400).json({ error: 'Payment intent ID is required' });
-        }
+  try {
+    console.log('confirmPayment called, body:', req.body);
+    const { paymentIntentId, ticketDetails } = req.body;
 
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        
-        if (paymentIntent.status === 'succeeded') {
-            // Get payment ID from database
-            const paymentId = await getPaymentIdByStripeId(paymentIntentId);
-            
-            if (!paymentId) {
-                return res.status(404).json({ error: 'Payment not found' });
-            }
-
-            // Create ticket
-            const ticket = await createTicket({
-                paymentId: paymentId,
-                userId: ticketDetails.userId,
-                startLocation: ticketDetails.startLocation,
-                endLocation: ticketDetails.endLocation,
-                routeId: ticketDetails.routeId,
-                busNumber: ticketDetails.busNumber,
-                fare: ticketDetails.fare
-            });
-            
-            // Update payment status
-            await updatePaymentStatus(paymentIntentId, 'completed');
-            
-            res.json({ 
-                success: true, 
-                ticket: ticket,
-                message: 'Payment confirmed successfully'
-            });
-        } else {
-            res.status(400).json({ 
-                error: 'Payment not successful', 
-                status: paymentIntent.status 
-            });
-        }
-    } catch (error) {
-        console.error('Error confirming payment:', error);
-        res.status(500).json({ error: error.message });
+    if (!paymentIntentId) {
+      return res.status(400).json({ error: 'paymentIntentId is required' });
     }
+
+    // Retrieve PaymentIntent from Stripe and log status
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    console.log('Stripe paymentIntent:', paymentIntent.id, 'status:', paymentIntent.status);
+
+    // If payment is not succeeded, return status for debugging
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({
+        error: 'Payment not successful',
+        status: paymentIntent.status,
+      });
+    }
+
+    // Get full payment record from DB (so we can read user_id and payment id)
+    const paymentRecord = await getPaymentByStripeId(paymentIntentId);
+    if (!paymentRecord) {
+      console.error('Payment record not found for stripe id:', paymentIntentId);
+      return res.status(404).json({ error: 'Payment record not found' });
+    }
+    console.log('Found paymentRecord:', paymentRecord);
+
+    // Resolve userId (prefer ticketDetails.userId, fallback to saved payment.user_id)
+    const userId = ticketDetails?.userId || paymentRecord.user_id;
+    if (!userId) {
+      console.error('No userId available for ticket creation. ticketDetails:', ticketDetails, 'paymentRecord.user_id:', paymentRecord.user_id);
+      return res.status(400).json({ error: 'User ID not available for ticket creation' });
+    }
+
+    // Build ticket payload using provided details or values stored with payment
+    const ticketPayload = {
+      paymentId: paymentRecord.id,
+      userId: userId,
+      startLocation: ticketDetails?.startLocation || paymentRecord.start_location,
+      endLocation: ticketDetails?.endLocation || paymentRecord.end_location,
+      routeId: ticketDetails?.routeId || paymentRecord.route_id,
+      busNumber: ticketDetails?.busNumber || paymentRecord.bus_number,
+      fare: ticketDetails?.fare ?? paymentRecord.amount
+    };
+
+    // Create ticket
+    const ticket = await createTicket(ticketPayload);
+    console.log('Ticket created successfully:', ticket.id || ticket);
+
+    // Update payment status to completed
+    await updatePaymentStatus(paymentIntentId, 'completed');
+
+    return res.json({
+      success: true,
+      ticket,
+      message: 'Payment confirmed and ticket created'
+    });
+  } catch (error) {
+    console.error('Error in confirmPayment:', error);
+    return res.status(500).json({ error: error.message || String(error) });
+  }
 };
 
 // 3. Webhook for payment status updates
@@ -237,6 +252,7 @@ const webhook = async (req, res) => {
 
 module.exports = {
    createPaymentIntent,
+   getPaymentByStripeId,
    confirmPayment,
    webhook 
 };

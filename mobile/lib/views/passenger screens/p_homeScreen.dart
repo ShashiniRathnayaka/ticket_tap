@@ -5,7 +5,8 @@ import 'package:ticket_tap/views/passenger%20screens/qr_scanner.dart';
 import 'package:ticket_tap/views/passenger%20screens/ticket_history.dart';
 
 class PHomescreen extends StatefulWidget {
-  const PHomescreen({super.key});
+  final int initialIndex;
+  const PHomescreen({super.key, this.initialIndex = 0});
 
   @override
   State<PHomescreen> createState() => _PHomescreenState();
@@ -16,17 +17,23 @@ class _PHomescreenState extends State<PHomescreen> {
   
   // Screens for bottom navigation
   final List<Widget> _screens = [
-    // HomeDashboard(),
     SimpleQrScanner(),
     TicketHistoryScreen(),
     ProfileScreen()
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
   }
+
+  // void _onItemTapped(int index) {
+  //   setState(() {
+  //     _selectedIndex = index;
+  //   });
+  // }
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +41,6 @@ class _PHomescreenState extends State<PHomescreen> {
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          // BottomNavigationBarItem(
-          //   icon: Icon(Icons.home),
-          //   label: 'Home',
-          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.qr_code_scanner),
             label: 'Scan QR',
