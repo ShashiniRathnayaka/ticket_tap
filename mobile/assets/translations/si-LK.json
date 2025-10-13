@@ -53,5 +53,6 @@
   "password_min_length": "මුරපදය අකුරු 6ක් තිබිය යුතුය",
   "password_changed_successfully": "මුරපදය සාර්ථකව වෙනස් කරන ලදී",
   "password_change_failed": "මුරපදය වෙනස් කිරීම අසාර්ථක විය",
-  "connection_error": "සම්බන්ධතා දෝෂයකි. කරුණාකර නැවත උත්සාහ කරන්න."
+  "connection_error": "සම්බන්ධතා දෝෂයකි. කරුණාකර නැවත උත්සාහ කරන්න.",
+  "available_routes": "පවතින බස් මාර්ග"
 }

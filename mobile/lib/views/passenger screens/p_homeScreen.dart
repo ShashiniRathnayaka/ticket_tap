@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ticket_tap/themes/gradient_background.dart';
+import 'package:ticket_tap/views/passenger%20screens/passenger_routes_page.dart';
 import 'package:ticket_tap/views/passenger%20screens/profile_screen.dart';
 import 'package:ticket_tap/views/passenger%20screens/qr_scanner.dart';
 import 'package:ticket_tap/views/passenger%20screens/ticket_history.dart';
@@ -19,6 +20,7 @@ class _PHomescreenState extends State<PHomescreen> {
   // Screens for bottom navigation
   final List<Widget> _screens = [
     SimpleQrScanner(),
+    PassengerRoutesPage(),
     TicketHistoryScreen(),
     ProfileScreen()
   ];
@@ -45,6 +47,10 @@ class _PHomescreenState extends State<PHomescreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.qr_code_scanner),
             label: 'scan_qr'.tr(),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.route),
+            label: 'route'.tr(),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
