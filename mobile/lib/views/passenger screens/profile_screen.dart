@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:ticket_tap/views/sign_in.dart';
 
@@ -15,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _email = '';
   String _name = '';
   String _role = '';
+  String _token = '';
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _email = userData['email'] ?? '';
       _name = userData['name'] ?? '';
       _role = userData['role'] ?? '';
+      _token = userData['authToken'] ?? '';
     });
   }
 
@@ -71,34 +76,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-Future<void> _changeLanguage(BuildContext context, String languageCode) async {
-  try {
-    Locale newLocale;
-    
-    // Create locale with country code based on language
-    switch (languageCode) {
-      case 'si':
-        newLocale = const Locale('si', 'LK'); // Sinhala - Sri Lanka
-        break;
-      case 'ta':
-        newLocale = const Locale('ta', 'IN'); // Tamil - Sri Lanka
-        break;
-      case 'en':
-      default:
-        newLocale = const Locale('en', 'US'); // English - USA
-        break;
+  Future<void> _changeLanguage(
+    BuildContext context,
+    String languageCode,
+  ) async {
+    try {
+      Locale newLocale;
+
+      // Create locale with country code based on language
+      switch (languageCode) {
+        case 'si':
+          newLocale = const Locale('si', 'LK'); // Sinhala - Sri Lanka
+          break;
+        case 'ta':
+          newLocale = const Locale('ta', 'IN'); // Tamil - Sri Lanka
+          break;
+        case 'en':
+        default:
+          newLocale = const Locale('en', 'US'); // English - USA
+          break;
+      }
+
+      await context.setLocale(newLocale);
+
+      // Force rebuild
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error changing language: $e');
     }
-    
-    await context.setLocale(newLocale);
-    
-    // Force rebuild
-    if (mounted) {
-      setState(() {});
-    }
-  } catch (e) {
-    print('Error changing language: $e');
   }
-}
 
   void _showLanguageDialog(BuildContext context) {
     showDialog(
@@ -154,7 +162,7 @@ Future<void> _changeLanguage(BuildContext context, String languageCode) async {
     Color color,
   ) {
     final isCurrentLanguage = context.locale.languageCode == languageCode;
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 2,
@@ -182,9 +190,10 @@ Future<void> _changeLanguage(BuildContext context, String languageCode) async {
             color: isCurrentLanguage ? Color(0xFF4E1A93) : Colors.black87,
           ),
         ),
-        trailing: isCurrentLanguage
-            ? Icon(Icons.check_circle, color: Color(0xFF4E1A93))
-            : null,
+        trailing:
+            isCurrentLanguage
+                ? Icon(Icons.check_circle, color: Color(0xFF4E1A93))
+                : null,
         onTap: () {
           _changeLanguage(context, languageCode);
           Navigator.of(context).pop();
@@ -193,13 +202,16 @@ Future<void> _changeLanguage(BuildContext context, String languageCode) async {
     );
   }
 
-  Widget _buildInfoTile(String title, String value, IconData icon, Color color) {
+  Widget _buildInfoTile(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -237,6 +249,276 @@ Future<void> _changeLanguage(BuildContext context, String languageCode) async {
     );
   }
 
+  void _showChangePasswordDialog(BuildContext context) {
+    final TextEditingController currentPasswordController =
+        TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController =
+        TextEditingController();
+
+    bool _isLoading = false;
+    bool _obscureCurrentPassword = true;
+    bool _obscureNewPassword = true;
+    bool _obscureConfirmPassword = true;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.lock, color: Color(0xFF4E1A93)),
+                  SizedBox(width: 8),
+                  Text(
+                    'change_password'.tr(),
+                    style: TextStyle(
+                      color: Color(0xFF4E1A93),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Current Password Field
+                    TextFormField(
+                      controller: currentPasswordController,
+                      obscureText: _obscureCurrentPassword,
+                      decoration: InputDecoration(
+                        labelText: 'current_password'.tr(),
+                        prefixIcon: Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureCurrentPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureCurrentPassword =
+                                  !_obscureCurrentPassword;
+                            });
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    // New Password Field
+                    TextFormField(
+                      controller: newPasswordController,
+                      obscureText: _obscureNewPassword,
+                      decoration: InputDecoration(
+                        labelText: 'new_password'.tr(),
+                        prefixIcon: Icon(Icons.lock_reset),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureNewPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureNewPassword = !_obscureNewPassword;
+                            });
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
+                    // Confirm Password Field
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      obscureText: _obscureConfirmPassword,
+                      decoration: InputDecoration(
+                        labelText: 'confirm_password'.tr(),
+                        prefixIcon: Icon(Icons.lock_reset),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      _isLoading ? null : () => Navigator.of(context).pop(),
+                  child: Text('cancel'.tr()),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () async {
+                            if (currentPasswordController.text.isEmpty ||
+                                newPasswordController.text.isEmpty ||
+                                confirmPasswordController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('all_fields_required'.tr()),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (newPasswordController.text !=
+                                confirmPasswordController.text) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('passwords_do_not_match'.tr()),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (newPasswordController.text.length < 6) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('password_min_length'.tr()),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            await _changePassword(
+                              context,
+                              currentPasswordController.text,
+                              newPasswordController.text,
+                            );
+
+                            setState(() {
+                              _isLoading = false;
+                            });
+                          },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF4E1A93),
+                    foregroundColor: Colors.white,
+                  ),
+                  child:
+                      _isLoading
+                          ? SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : Text('change_password'.tr()),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _changePassword(
+    BuildContext context,
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      // final token = await SecureStorageService.getToken();
+      print("Changing password with token: $_token");
+      if (_token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('session_expired'.tr()),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('http://192.168.8.117:5000/auth/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Success
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('password_changed_successfully'.tr()),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.of(context).pop(); // Close dialog
+      } else {
+        // Error
+        // Navigator.of(context).pop();
+        final errorData = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorData['message'] ?? 'password_change_failed'.tr(),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Password change error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('connection_error'.tr()),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isLoading = _email.isEmpty && _name.isEmpty;
@@ -244,10 +526,7 @@ Future<void> _changeLanguage(BuildContext context, String languageCode) async {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
-          "profile".tr(),
-          style: TextStyle(color: Colors.white),
-        ),
+        title: Text("profile".tr(), style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4E1A93),
         elevation: 0,
         actions: [
@@ -265,258 +544,275 @@ Future<void> _changeLanguage(BuildContext context, String languageCode) async {
           ),
         ],
       ),
-      body: isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4E1A93)),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'loading_profile'.tr(),
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  // Profile header with gradient
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF4E1A93).withOpacity(0.9),
-                          const Color(0xFF6B46C1),
+      body:
+          isLoading
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF4E1A93),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'loading_profile'.tr(),
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  children: [
+                    // Profile header with gradient
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF4E1A93).withOpacity(0.9),
+                            const Color(0xFF6B46C1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purple.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.purple.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          child: Text(
-                            _name.isNotEmpty ? _name[0].toUpperCase() : "?",
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            child: Text(
+                              _name.isNotEmpty ? _name[0].toUpperCase() : "?",
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _name.isNotEmpty
+                                ? _name
+                                : "no_name".tr(), // Added .tr()
                             style: const TextStyle(
-                              fontSize: 32,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _name.isNotEmpty ? _name : "no_name".tr(), // Added .tr()
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _role.isNotEmpty ? _role.toUpperCase() : "user_role".tr().toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _role.isNotEmpty
+                                  ? _role.toUpperCase()
+                                  : "user_role".tr().toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _email.isNotEmpty ? _email : "no_email".tr(), // Added .tr()
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.8),
+                          const SizedBox(height: 8),
+                          Text(
+                            _email.isNotEmpty
+                                ? _email
+                                : "no_email".tr(), // Added .tr()
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-
-                  // Language Change Card
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.1)),
+                        ],
                       ),
-                      child: ListTile(
-                        leading: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.purple.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Language Change Card
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF4E1A93).withOpacity(0.1),
                           ),
-                          child: Icon(Icons.language, color: Colors.purple, size: 24),
                         ),
-                        title: Text(
-                          'select_language'.tr(),
+                        child: ListTile(
+                          leading: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.language,
+                              color: Colors.purple,
+                              size: 24,
+                            ),
+                          ),
+                          title: Text(
+                            'select_language'.tr(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: Color(0xFF4E1A93),
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Change app language'
+                                .tr(), // You can add this to your JSON files
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                          trailing: Icon(
+                            Icons.arrow_forward_ios,
+                            color: Color(0xFF4E1A93),
+                            size: 16,
+                          ),
+                          onTap: () => _showLanguageDialog(context),
+                        ),
+                      ),
+                    ),
+
+                    // Personal Information Section
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, color: Color(0xFF4E1A93)),
+                        SizedBox(width: 8),
+                        Text(
+                          'personal_information'.tr(),
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFF4E1A93),
                           ),
                         ),
-                        subtitle: Text(
-                          'Change app language'.tr(), // You can add this to your JSON files
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        trailing: Icon(Icons.arrow_forward_ios, color: Color(0xFF4E1A93), size: 16),
-                        onTap: () => _showLanguageDialog(context),
-                      ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
 
-                  // Personal Information Section
-                  Row(
-                    children: [
-                      Icon(Icons.person_outline, color: Color(0xFF4E1A93)),
-                      SizedBox(width: 8),
-                      Text(
-                        'personal_information'.tr(),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4E1A93),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                    _buildInfoTile(
+                      "user_id".tr(), // Added .tr()
+                      _userId,
+                      Icons.fingerprint,
+                      Colors.blue.shade600,
+                    ),
 
-                  _buildInfoTile(
-                    "user_id".tr(), // Added .tr()
-                    _userId, 
-                    Icons.fingerprint, 
-                    Colors.blue.shade600
-                  ),
-                  
-                  _buildInfoTile(
-                    "email_address".tr(), // Added .tr()
-                    _email, 
-                    Icons.email, 
-                    Colors.green.shade600
-                  ),
-                  
-                  _buildInfoTile(
-                    "account_role".tr(), 
-                    _role, 
-                    Icons.badge, 
-                    Colors.orange.shade600
-                  ),
+                    _buildInfoTile(
+                      "email_address".tr(), // Added .tr()
+                      _email,
+                      Icons.email,
+                      Colors.green.shade600,
+                    ),
 
-                  const SizedBox(height: 30),
+                    _buildInfoTile(
+                      "account_role".tr(),
+                      _role,
+                      Icons.badge,
+                      Colors.orange.shade600,
+                    ),
 
-                  // Action Buttons
-                  Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('edit_profile_coming_soon'.tr()), // Added .tr()
-                                backgroundColor: const Color(0xFF4E1A93),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                    const SizedBox(height: 30),
+
+                    // Action Buttons
+                    Column(
+                      children: [
+                        // SizedBox(
+                        //   width: double.infinity,
+                        //   child: ElevatedButton.icon(
+                        //     onPressed: () {
+                        //       ScaffoldMessenger.of(context).showSnackBar(
+                        //         SnackBar(
+                        //           content: Text(
+                        //             'edit_profile_coming_soon'.tr(),
+                        //           ), // Added .tr()
+                        //           backgroundColor: const Color(0xFF4E1A93),
+                        //           behavior: SnackBarBehavior.floating,
+                        //           shape: RoundedRectangleBorder(
+                        //             borderRadius: BorderRadius.circular(8),
+                        //           ),
+                        //         ),
+                        //       );
+                        //     },
+                        //     style: ElevatedButton.styleFrom(
+                        //       backgroundColor: const Color(0xFF4E1A93),
+                        //       foregroundColor: Colors.white,
+                        //       padding: const EdgeInsets.symmetric(vertical: 15),
+                        //       shape: RoundedRectangleBorder(
+                        //         borderRadius: BorderRadius.circular(12),
+                        //       ),
+                        //     ),
+                        //     icon: const Icon(Icons.edit, size: 20),
+                        //     label: Text(
+                        //       'edit_profile'.tr(),
+                        //       style: TextStyle(
+                        //         fontSize: 16,
+                        //         fontWeight: FontWeight.bold,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
+
+                        const SizedBox(height: 12),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showChangePasswordDialog(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF4E1A93),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4E1A93),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Color(0xFF4E1A93)),
+                            ),
+                            icon: const Icon(Icons.lock, size: 20),
+                            label: Text(
+                              'change_password'.tr(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          icon: const Icon(Icons.edit, size: 20),
-                          label: Text(
-                            'edit_profile'.tr(),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
                         ),
-                      ),
-                      
-                      const SizedBox(height: 12),
-                      
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('change_password_coming_soon'.tr()), // Added .tr()
-                                backgroundColor: Colors.blue.shade600,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF4E1A93),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: const BorderSide(color: Color(0xFF4E1A93)),
-                          ),
-                          icon: const Icon(Icons.lock, size: 20),
-                          label: Text(
-                            'change_password'.tr(),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }

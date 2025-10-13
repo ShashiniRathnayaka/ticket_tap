@@ -44,5 +44,14 @@
   "date": "දිනය",
   "distance": "දුර",
   "view_trip_details": "ගමන් විස්තර බලන්න",
-  "today": "අද"
+  "today": "අද",
+  "current_password": "වර්තමන් මුරපදය",
+  "new_password": "නව මුරපදය",
+  "confirm_password": "මුරපදය තහවුරු කරන්න", 
+  "all_fields_required": "සියලු ක්ෂේත්ර අවශ්‍ය වේ",
+  "passwords_do_not_match": "මුරපදය නොගැලපේ",
+  "password_min_length": "මුරපදය අකුරු 6ක් තිබිය යුතුය",
+  "password_changed_successfully": "මුරපදය සාර්ථකව වෙනස් කරන ලදී",
+  "password_change_failed": "මුරපදය වෙනස් කිරීම අසාර්ථක විය",
+  "connection_error": "සම්බන්ධතා දෝෂයකි. කරුණාකර නැවත උත්සාහ කරන්න."
 }

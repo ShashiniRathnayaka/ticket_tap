@@ -169,7 +169,6 @@ class _SignInState extends State<SignIn> {
 
                     // Parse the response
                     final responseData = jsonDecode(response.body);
-                    // final storageService = SecureStorageService();
 
                     if (response.statusCode == 200) {
                       // Login successful

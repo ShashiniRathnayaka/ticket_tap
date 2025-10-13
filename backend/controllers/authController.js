@@ -213,3 +213,62 @@ exports.authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.userId; // From authenticated token
+
+  // Validation
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ 
+      message: "Current password and new password are required" 
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ 
+      message: "New password must be at least 6 characters long" 
+    });
+  }
+
+  try {
+    // Get user from database
+    const userResult = await client.query(
+      "SELECT * FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword, 
+      user.password_hash
+    );
+
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in database
+    await client.query(
+      "UPDATE users SET password_hash = $1 WHERE id = $2",
+      [hashedNewPassword, userId]
+    );
+
+    res.status(200).json({ 
+      message: "Password changed successfully" 
+    });
+
+  } catch (err) {
+    console.error("Password change error:", err);
+    res.status(500).json({ message: "Error changing password" });
+  }
+};

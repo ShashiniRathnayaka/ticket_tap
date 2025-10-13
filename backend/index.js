@@ -20,6 +20,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json()); // for parsing application/json
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/auth', authRoutes); // Add the authentication routes here

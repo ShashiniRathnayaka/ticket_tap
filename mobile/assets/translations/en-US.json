@@ -44,5 +44,14 @@
   "date": "Date",
   "distance": "Distance",
   "view_trip_details": "View Trip Details",
-  "today": "Today"
+  "today": "Today",
+  "current_password": "Current Password",
+  "new_password": "New Password", 
+  "confirm_password": "Confirm Password",
+  "all_fields_required": "All fields are required",
+  "passwords_do_not_match": "Passwords do not match",
+  "password_min_length": "Password must be at least 6 characters",
+  "password_changed_successfully": "Password changed successfully",
+  "password_change_failed": "Failed to change password",
+  "connection_error": "Connection error. Please try again."
 }
