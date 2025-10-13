@@ -1,5 +1,5 @@
 const client = require('../db');
-const stripe = require('stripe')('sk_test_51SAQMVKxTYGsGrGJ2gDXFmlQj5VwWXz7t7mwNjypZ4r1gVmgZUeVy8PkIGVQ4ciQQa1bmvEon68w1phGxyUBHNar00qTXNJyzC'); // Add this line
+const stripe = require('stripe')('process.env.STRIPE_SECRET_KEY'); // Add this line
 
 // Helper functions (you need to implement these)
 const generateId = () => {
