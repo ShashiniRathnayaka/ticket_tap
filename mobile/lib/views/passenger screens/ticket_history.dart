@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -61,7 +62,7 @@ class _TicketHistoryScreenState extends State<TicketHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text("Ticket History", style: TextStyle(color: Colors.white),),
+        title: Text("ticket_history".tr(), style: TextStyle(color: Colors.white),),
         backgroundColor: const Color(0xFF4E1A93),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),

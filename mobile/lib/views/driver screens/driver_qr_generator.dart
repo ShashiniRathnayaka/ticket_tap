@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -123,7 +124,7 @@ class _DriverQrGeneratorScreenState extends State<DriverQrGeneratorScreen> {
                                 backgroundColor: const Color(0xFF4E1A93),
                                 foregroundColor: Colors.white,
                               ),
-                              child: const Text('Try Again'),
+                              child: Text('try_again'.tr()),
                             ),
                           ],
                         ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:http/http.dart' as http;
@@ -177,7 +178,7 @@ class _DriverTripHistoryScreenState extends State<DriverTripHistoryScreen> {
                           backgroundColor: const Color(0xFF4E1A93),
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('Try Again'),
+                        child: Text('try_again'.tr()),
                       ),
                     ],
                   ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:ticket_tap/views/passenger%20screens/payment_screen.dart';
@@ -157,7 +158,7 @@ class _SimpleQrScannerState extends State<SimpleQrScanner> {
                 Navigator.of(context).pop();
                 _startScanning(); // Restart scanning
               },
-              child: const Text("Try Again"),
+              child: Text("try_again".tr()),
             ),
           ],
         );
@@ -262,8 +263,9 @@ class _SimpleQrScannerState extends State<SimpleQrScanner> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        
         backgroundColor: const Color(0xFF4E1A93),
-        title: const Text("Scan QR Code", style: TextStyle(color: Colors.white)),
+        title: Text("scan_qr".tr(), style: TextStyle(color: Colors.white)),
         // leading: IconButton(
         //   icon: const Icon(Icons.arrow_back, color: Colors.white),
         //   onPressed: () => Navigator.of(context).pop(),

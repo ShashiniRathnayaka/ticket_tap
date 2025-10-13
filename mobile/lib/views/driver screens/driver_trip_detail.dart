@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:ticket_tap/views/driver%20screens/d_homeScreen.dart';
@@ -246,13 +247,13 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.play_arrow, size: 20),
             SizedBox(width: 8),
             Text(
-              'Start Trip',
+              'start_trip'.tr(),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -525,7 +526,7 @@ class _DriverTripDetailScreenState extends State<DriverTripDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('cancel'.tr()),
             ),
             ElevatedButton(
               onPressed: () {

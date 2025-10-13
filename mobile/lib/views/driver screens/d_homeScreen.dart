@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:ticket_tap/themes/gradient_background.dart';
@@ -37,18 +38,18 @@ class _DHomescreenState extends State<DHomescreen> {
     return GradientScaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.directions_bus),
-            label: 'My Trips',
+            label: 'my_trips'.tr(),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
-            label: 'History',
+            label: 'history'.tr(),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profile',
+            label: 'profile'.tr(),
           ),
         ],
         currentIndex: _selectedIndex,
@@ -84,13 +85,11 @@ class _DriverDashboardState extends State<DriverDashboard> {
   Future<void> _loadUserData() async {
     try {
       final userData = await SecureStorageService.getUserData();
-      if (userData != null) {
-        setState(() {
-          driverName = userData['name'] ?? 'Driver';
-          accessToken = userData['authToken'] ?? '';
-        });
-      }
-    } catch (e) {
+      setState(() {
+        driverName = userData['name'] ?? 'Driver';
+        accessToken = userData['authToken'] ?? '';
+      });
+        } catch (e) {
       print('Error loading user data: $e');
     }
   }
@@ -98,7 +97,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
   Future<String?> _refreshToken() async {
     try {
       final userData = await SecureStorageService.getUserData();
-      if (userData == null) return null;
 
       final refreshToken = userData['refreshToken'];
       if (refreshToken == null || refreshToken.isEmpty) return null;
@@ -140,9 +138,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
     try {
       // Get current token
       final userData = await SecureStorageService.getUserData();
-      if (userData == null) {
-        throw Exception('User not logged in');
-      }
 
       String token = userData['authToken'] ?? '';
 
@@ -183,8 +178,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Session Expired'),
-          content: const Text('Your session has expired. Please login again.'),
+          title: Text('session_expired'.tr()),
+          content: Text('session_expired_message'.tr()),
           actions: [
             TextButton(
               onPressed: () {
@@ -198,7 +193,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                 // Navigate to login screen - adjust this based on your app structure
                 _navigateToLoginScreen();
               },
-              child: const Text('OK'),
+              child: Text('ok'.tr()),
             ),
           ],
         );
@@ -222,7 +217,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
     // Option 3: Show a login dialog or redirect to your auth flow
     // For now, we'll just show an error message
     setState(() {
-      errorMessage = 'Please restart the app to login again.';
+      errorMessage = 'restart_app_message'.tr();
       isLoading = false;
     });
   }
@@ -293,8 +288,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text(
-          'My Assigned Trips',
+        title: Text(
+          'my_assigned_trips'.tr(),
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF4E1A93),
@@ -321,14 +316,14 @@ class _DriverDashboardState extends State<DriverDashboard> {
               ),
             ),
             const SizedBox(height: 5),
-            const Text(
-              "Your assigned trips are listed below",
+            Text(
+              "assigned_trips_description".tr(),
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 20),
             
             if (isLoading)
-              const Expanded(
+              Expanded(
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -338,7 +333,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'Loading your trips...',
+                        'loading_trips'.tr(),
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -373,7 +368,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                             backgroundColor: const Color(0xFF4E1A93),
                             foregroundColor: Colors.white,
                           ),
-                          child: const Text('Try Again'),
+                          child: Text('try_again'.tr()),
                         ),
                     ],
                   ),
@@ -391,16 +386,16 @@ class _DriverDashboardState extends State<DriverDashboard> {
                         color: Colors.grey,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'No trips scheduled for today',
+                      Text(
+                        'no_trips_today'.tr(),
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.grey,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Check back later for new assignments',
+                      Text(
+                        'check_back_later'.tr(),
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -637,13 +632,13 @@ class TripCard extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.remove_red_eye, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'View Trip Details',
+                        'view_trip_details'.tr(),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                         ),

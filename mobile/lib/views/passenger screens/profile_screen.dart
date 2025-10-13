@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ticket_tap/services/secure_storage_services.dart';
 import 'package:ticket_tap/views/sign_in.dart';
@@ -37,15 +38,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text(
-            'Logout',
+          title: Text(
+            'logout'.tr(),
             style: TextStyle(color: Color(0xFF4E1A93)),
           ),
-          content: const Text('Are you sure you want to logout?'),
+          content: Text('logout_confirmation'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('cancel'.tr()),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -62,11 +63,133 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Logout'),
+              child: Text('logout'.tr()),
             ),
           ],
         );
       },
+    );
+  }
+
+Future<void> _changeLanguage(BuildContext context, String languageCode) async {
+  try {
+    Locale newLocale;
+    
+    // Create locale with country code based on language
+    switch (languageCode) {
+      case 'si':
+        newLocale = const Locale('si', 'LK'); // Sinhala - Sri Lanka
+        break;
+      case 'ta':
+        newLocale = const Locale('ta', 'IN'); // Tamil - Sri Lanka
+        break;
+      case 'en':
+      default:
+        newLocale = const Locale('en', 'US'); // English - USA
+        break;
+    }
+    
+    await context.setLocale(newLocale);
+    
+    // Force rebuild
+    if (mounted) {
+      setState(() {});
+    }
+  } catch (e) {
+    print('Error changing language: $e');
+  }
+}
+
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'select_language'.tr(),
+            style: TextStyle(color: Color(0xFF4E1A93)),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildLanguageOption(
+                context,
+                'English',
+                'en',
+                Icons.language,
+                Colors.blue,
+              ),
+              _buildLanguageOption(
+                context,
+                'සිංහල',
+                'si',
+                Icons.translate,
+                Colors.green,
+              ),
+              _buildLanguageOption(
+                context,
+                'தமிழ்',
+                'ta',
+                Icons.language,
+                Colors.orange,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('cancel'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(
+    BuildContext context,
+    String languageName,
+    String languageCode,
+    IconData icon,
+    Color color,
+  ) {
+    final isCurrentLanguage = context.locale.languageCode == languageCode;
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isCurrentLanguage ? Color(0xFF4E1A93) : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          languageName,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: isCurrentLanguage ? Color(0xFF4E1A93) : Colors.black87,
+          ),
+        ),
+        trailing: isCurrentLanguage
+            ? Icon(Icons.check_circle, color: Color(0xFF4E1A93))
+            : null,
+        onTap: () {
+          _changeLanguage(context, languageCode);
+          Navigator.of(context).pop();
+        },
+      ),
     );
   }
 
@@ -94,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Icon(icon, color: color, size: 24),
           ),
           title: Text(
-            title,
+            title.tr(), // Added .tr() here
             style: const TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
@@ -102,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           subtitle: Text(
-            value.isNotEmpty ? value : "Not available",
+            value.isNotEmpty ? value : "not_available".tr(), // Added .tr() here
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -114,55 +237,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Widget _buildStatCard(String title, String value, IconData icon) {
-  //   return Expanded(
-  //     child: Card(
-  //       elevation: 3,
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.circular(16),
-  //       ),
-  //       child: Container(
-  //         decoration: BoxDecoration(
-  //           color: Colors.white,
-  //           borderRadius: BorderRadius.circular(16),
-  //           border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.1)),
-  //         ),
-  //         padding: const EdgeInsets.all(16),
-  //         child: Column(
-  //           children: [
-  //             Container(
-  //               width: 40,
-  //               height: 40,
-  //               decoration: BoxDecoration(
-  //                 color: const Color(0xFF4E1A93).withOpacity(0.1),
-  //                 borderRadius: BorderRadius.circular(10),
-  //               ),
-  //               child: Icon(icon, color: const Color(0xFF4E1A93), size: 20),
-  //             ),
-  //             const SizedBox(height: 8),
-  //             Text(
-  //               value,
-  //               style: const TextStyle(
-  //                 fontSize: 18,
-  //                 fontWeight: FontWeight.bold,
-  //                 color: Color(0xFF4E1A93),
-  //               ),
-  //             ),
-  //             Text(
-  //               title,
-  //               style: const TextStyle(
-  //                 fontSize: 12,
-  //                 color: Colors.grey,
-  //               ),
-  //               textAlign: TextAlign.center,
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
     final bool isLoading = _email.isEmpty && _name.isEmpty;
@@ -170,23 +244,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text(
-          "Profile",
+        title: Text(
+          "profile".tr(),
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF4E1A93),
         elevation: 0,
-        // iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          // Language switcher icon
+          IconButton(
+            icon: const Icon(Icons.language, color: Colors.white),
+            onPressed: () => _showLanguageDialog(context),
+            tooltip: 'select_language'.tr(),
+          ),
+          // Logout icon
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () => _logout(context),
-            tooltip: 'Logout',
+            tooltip: 'logout'.tr(),
           ),
         ],
       ),
       body: isLoading
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -195,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Loading profile...',
+                    'loading_profile'.tr(),
                     style: TextStyle(color: Colors.grey),
                   ),
                 ],
@@ -243,7 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          _name.isNotEmpty ? _name : "No Name",
+                          _name.isNotEmpty ? _name : "no_name".tr(), // Added .tr()
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -258,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            _role.isNotEmpty ? _role.toUpperCase() : "USER",
+                            _role.isNotEmpty ? _role.toUpperCase() : "user_role".tr().toUpperCase(),
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -268,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _email.isNotEmpty ? _email : "No email",
+                          _email.isNotEmpty ? _email : "no_email".tr(), // Added .tr()
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withOpacity(0.8),
@@ -280,24 +360,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   
                   const SizedBox(height: 24),
 
-                  // Statistics Row (you can add actual stats later)
-                  // Row(
-                  //   children: [
-                  //     _buildStatCard('Trips Today', '5', Icons.directions_bus),
-                  //     const SizedBox(width: 12),
-                  //     _buildStatCard('Total Trips', '127', Icons.history),
-                  //   ],
-                  // ),
-                  
-                  const SizedBox(height: 20),
+                  // Language Change Card
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF4E1A93).withOpacity(0.1)),
+                      ),
+                      child: ListTile(
+                        leading: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.language, color: Colors.purple, size: 24),
+                        ),
+                        title: Text(
+                          'select_language'.tr(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: Color(0xFF4E1A93),
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Change app language'.tr(), // You can add this to your JSON files
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        trailing: Icon(Icons.arrow_forward_ios, color: Color(0xFF4E1A93), size: 16),
+                        onTap: () => _showLanguageDialog(context),
+                      ),
+                    ),
+                  ),
 
                   // Personal Information Section
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.person_outline, color: Color(0xFF4E1A93)),
                       SizedBox(width: 8),
                       Text(
-                        'Personal Information',
+                        'personal_information'.tr(),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -309,21 +422,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 12),
 
                   _buildInfoTile(
-                    "User ID", 
+                    "user_id".tr(), // Added .tr()
                     _userId, 
                     Icons.fingerprint, 
                     Colors.blue.shade600
                   ),
                   
                   _buildInfoTile(
-                    "Email Address", 
+                    "email_address".tr(), // Added .tr()
                     _email, 
                     Icons.email, 
                     Colors.green.shade600
                   ),
                   
                   _buildInfoTile(
-                    "Account Role", 
+                    "account_role".tr(), 
                     _role, 
                     Icons.badge, 
                     Colors.orange.shade600
@@ -338,10 +451,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            // Edit profile functionality
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Edit profile feature coming soon!'),
+                                content: Text('edit_profile_coming_soon'.tr()), // Added .tr()
                                 backgroundColor: const Color(0xFF4E1A93),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
@@ -359,8 +471,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           icon: const Icon(Icons.edit, size: 20),
-                          label: const Text(
-                            'Edit Profile',
+                          label: Text(
+                            'edit_profile'.tr(),
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -372,10 +484,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            // Change password functionality
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Change password feature coming soon!'),
+                                content: Text('change_password_coming_soon'.tr()), // Added .tr()
                                 backgroundColor: Colors.blue.shade600,
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
@@ -393,8 +504,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             side: const BorderSide(color: Color(0xFF4E1A93)),
                           ),
                           icon: const Icon(Icons.lock, size: 20),
-                          label: const Text(
-                            'Change Password',
+                          label: Text(
+                            'change_password'.tr(),
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
