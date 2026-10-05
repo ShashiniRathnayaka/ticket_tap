@@ -1,16 +1,34 @@
-# ticket_tap
+# QR Code-Based Digital Ticketing System (ticket_tap)
 
-A new Flutter project.
+A full-stack digital ticketing platform for bus transport, featuring QR code-based ticket validation, secure payments, and an admin panel for operators to manage routes, schedules, and tickets.
 
-## Getting Started
+## Tech Stack
+- **Frontend (Mobile):** Flutter
+- **Frontend (Admin Panel):** React
+- **Backend:** Node.js
+- **Database:** PostgreSQL
+- **Authentication & Services:** Firebase
+- **Payments:** Stripe API
+- **Other Integrations:** OpenRouteService API
 
-This project is a starting point for a Flutter application.
+## Key Features
+- Passenger registration and login
+- QR code generation and validation for digital bus tickets
+- Role-based access control (passenger vs. operator/admin)
+- Stripe payment integration for ticket purchases
+- React-based admin panel for operators to manage routes, schedules, and tickets
+- REST API-based backend architecture
 
-A few resources to get you started if this is your first Flutter project:
+## My Role
+Designed and built this project solo, covering the mobile application (Flutter), backend (Node.js, REST APIs), and the React-based admin panel.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Project Status
+This is a personal learning project built to practice full-stack mobile development, QR-based workflows, and payment integration. Core features and architecture are implemented, but the project is a work in progress:
+- UI/UX is functional but not yet polished
+- Some known logical issues are still being fixed
+- Not yet deployed
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Feedback and suggestions are welcome.
+
+## Setup
+> Setup instructions coming soon.
